@@ -24,9 +24,11 @@ public class VehicleZapPlugin extends JavaPlugin {
 			config.setProperty("boats.enable", true);
 			config.setProperty("boats.maxLifetime", 120);
 			config.setProperty("boats.strikeLightning", true);
+			config.setProperty("boats.returnToOwner", false);
 			config.setProperty("minecarts.enable", false);
 			config.setProperty("minecarts.maxLifetime", 120);
 			config.setProperty("minecarts.strikeLightning", true);
+			config.setProperty("minecarts.returnToOwner", false);
 			config.save();
 		}
 
@@ -38,7 +40,8 @@ public class VehicleZapPlugin extends JavaPlugin {
 		if (config.getBoolean("boats.enable", true)) {
 			final VehicleZapper zapper = new VehicleZapper(Boat.class,
 					config.getInt("boats.maxLifetime", 120),
-					config.getBoolean("boats.strikeLightning", true));
+					config.getBoolean("boats.strikeLightning", true),
+					config.getBoolean("boats.returnToOwner", false));
 			pluginManager.registerEvent(Type.VEHICLE_CREATE, zapper, Priority.Monitor, this);
 			pluginManager.registerEvent(Type.VEHICLE_EXIT, zapper, Priority.Monitor, this);
 			pluginManager.registerEvent(Type.VEHICLE_DESTROY, zapper, Priority.Monitor, this);
@@ -48,7 +51,8 @@ public class VehicleZapPlugin extends JavaPlugin {
 		if (config.getBoolean("minecarts.enable", false)) {
 			final VehicleZapper zapper = new VehicleZapper(Minecart.class,
 					config.getInt("minecarts.maxLifetime", 120),
-					config.getBoolean("minecarts.strikeLightning", true));
+					config.getBoolean("minecarts.strikeLightning", true),
+					config.getBoolean("minecarts.returnToOwner", false));
 			pluginManager.registerEvent(Type.VEHICLE_CREATE, zapper, Priority.Monitor, this);
 			pluginManager.registerEvent(Type.VEHICLE_EXIT, zapper, Priority.Monitor, this);
 			pluginManager.registerEvent(Type.VEHICLE_DESTROY, zapper, Priority.Monitor, this);

@@ -4,66 +4,120 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
+import org.bukkit.Material;
+import org.bukkit.entity.Boat;
+import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.PoweredMinecart;
+import org.bukkit.entity.StorageMinecart;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleListener;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 public class VehicleZapper extends VehicleListener implements Runnable {
 
-	private WeakHashMap<Vehicle, Long> vehicles = new WeakHashMap<Vehicle, Long>();
+	private WeakHashMap<Vehicle, VehicleData> vehicles = new WeakHashMap<Vehicle, VehicleData>();
 	private Class<? extends Vehicle> vehicleClass;
 
 	private int maxLifetime;
 	private boolean strikeLightning;
+	private boolean returnToOwner;
 
-	public VehicleZapper(Class<? extends Vehicle> vehicleClass, int maxLifetime, boolean strikeLightning) {
+	public VehicleZapper(Class<? extends Vehicle> vehicleClass, int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
 		this.vehicleClass = vehicleClass;
 		this.maxLifetime = maxLifetime;
 		this.strikeLightning = strikeLightning;
+		this.returnToOwner = returnToOwner;
 	}
 
 	@Override
 	public void onVehicleCreate(VehicleCreateEvent event) {
-		Vehicle vehicle = event.getVehicle();
-		if (vehicleClass.isAssignableFrom(vehicle.getClass()))
-			updateVehicle(vehicle);
+		final Vehicle vehicle = event.getVehicle();
+		if (vehicleClass.isAssignableFrom(vehicle.getClass())) {
+			final VehicleData data = getVehicleData(vehicle);
+			data.updateLastTimeUsed();
+			if (returnToOwner)
+				data.setOwner(findOwner(vehicle));
+		}
 	}
 
 	@Override
 	public void onVehicleExit(VehicleExitEvent event) {
-		Vehicle vehicle = event.getVehicle();
+		final Vehicle vehicle = event.getVehicle();
 		if (vehicleClass.isAssignableFrom(vehicle.getClass()))
-			updateVehicle(vehicle);
+			getVehicleData(vehicle).updateLastTimeUsed();
 	}
 
-	private void updateVehicle(Vehicle vehicle) {
-		vehicles.put(vehicle, System.currentTimeMillis());
+	private VehicleData getVehicleData(Vehicle vehicle) {
+		VehicleData data = vehicles.get(vehicle);
+		if (data == null) {
+			data = new VehicleData();
+			vehicles.put(vehicle, data);
+		}
+		return data;
+	}
+
+	/**
+	 * Tries to find the owner of the given vehicle.
+	 */
+	private Player findOwner(Vehicle vehicle) {
+		final Vector vehicleVector = vehicle.getLocation().toVector();
+		double minDistance = Double.MAX_VALUE;
+		Player owner = null;
+		for (Player player : vehicle.getWorld().getPlayers()) {
+			double distance = player.getLocation().toVector().distance(vehicleVector);
+			if (distance < minDistance) {
+				minDistance = distance;
+				owner = player;
+			}
+		}
+		return owner;
 	}
 
 	@Override
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
-		Vehicle vehicle = event.getVehicle();
+		final Vehicle vehicle = event.getVehicle();
 		if (vehicleClass.isAssignableFrom(vehicle.getClass()))
 			vehicles.remove(vehicle);
 	}
 
 	public void run() {
-		long now = System.currentTimeMillis();
-
-		Iterator<Entry<Vehicle, Long>> it = vehicles.entrySet().iterator();
+		final Iterator<Entry<Vehicle, VehicleData>> it = vehicles.entrySet().iterator();
 		while (it.hasNext()) {
-			Entry<Vehicle, Long> entry = it.next();
-			Vehicle vehicle = entry.getKey();
+			final Entry<Vehicle, VehicleData> entry = it.next();
+			final Vehicle vehicle = entry.getKey();
+			final VehicleData data = entry.getValue();
 			if (vehicle.isDead()) {
 				it.remove();
-			} else if (vehicle.isEmpty() && (now - entry.getValue() > maxLifetime * 1000)) {
+			} else if (vehicle.isEmpty() && (data.getUnusedTime() >= maxLifetime * 1000)) {
+				if (returnToOwner) {
+					final Player owner = data.getOwner();
+					if (owner != null)
+						owner.getInventory().addItem(new ItemStack(getVehicleMaterial(vehicle), 1));
+				}
 				if (strikeLightning)
 					vehicle.getWorld().strikeLightning(vehicle.getLocation());
 				vehicle.remove();
 				it.remove();
 			}
 		}
+	}
+
+	private Material getVehicleMaterial(Vehicle vehicle) {
+		if (vehicle instanceof Boat) {
+			return Material.BOAT;
+		} else if (vehicle instanceof Minecart) {
+			if (vehicle instanceof StorageMinecart)
+				return Material.STORAGE_MINECART;
+			else if (vehicle instanceof PoweredMinecart)
+				return Material.POWERED_MINECART;
+			else
+				return Material.MINECART;
+		} else
+			return Material.AIR;
 	}
 }
