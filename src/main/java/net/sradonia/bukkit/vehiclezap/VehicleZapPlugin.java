@@ -3,8 +3,6 @@ package net.sradonia.bukkit.vehiclezap;
 import java.io.File;
 import java.util.logging.Logger;
 
-import org.bukkit.entity.Boat;
-import org.bukkit.entity.Minecart;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -38,7 +36,7 @@ public class VehicleZapPlugin extends JavaPlugin {
 		final int checkInterval = config.getInt("checkInterval", 30) * 20;
 
 		if (config.getBoolean("boats.enable", true)) {
-			final VehicleZapper zapper = new VehicleZapper(Boat.class,
+			final VehicleZapper zapper = new BoatZapper(
 					config.getInt("boats.maxLifetime", 120),
 					config.getBoolean("boats.strikeLightning", true),
 					config.getBoolean("boats.returnToOwner", false));
@@ -49,7 +47,7 @@ public class VehicleZapPlugin extends JavaPlugin {
 		}
 
 		if (config.getBoolean("minecarts.enable", false)) {
-			final VehicleZapper zapper = new VehicleZapper(Minecart.class,
+			final VehicleZapper zapper = new MinecartZapper(
 					config.getInt("minecarts.maxLifetime", 120),
 					config.getBoolean("minecarts.strikeLightning", true),
 					config.getBoolean("minecarts.returnToOwner", false));

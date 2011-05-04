@@ -5,11 +5,7 @@ import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.bukkit.Material;
-import org.bukkit.entity.Boat;
-import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.PoweredMinecart;
-import org.bukkit.entity.StorageMinecart;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
@@ -18,26 +14,26 @@ import org.bukkit.event.vehicle.VehicleListener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-public class VehicleZapper extends VehicleListener implements Runnable {
+public abstract class VehicleZapper extends VehicleListener implements Runnable {
 
 	private WeakHashMap<Vehicle, VehicleData> vehicles = new WeakHashMap<Vehicle, VehicleData>();
-	private Class<? extends Vehicle> vehicleClass;
 
 	private int maxLifetime;
 	private boolean strikeLightning;
 	private boolean returnToOwner;
 
-	public VehicleZapper(Class<? extends Vehicle> vehicleClass, int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
-		this.vehicleClass = vehicleClass;
+	public VehicleZapper(int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
 		this.maxLifetime = maxLifetime;
 		this.strikeLightning = strikeLightning;
 		this.returnToOwner = returnToOwner;
 	}
 
+	protected abstract boolean isManagedVehicle(Vehicle vehicle);
+
 	@Override
 	public void onVehicleCreate(VehicleCreateEvent event) {
 		final Vehicle vehicle = event.getVehicle();
-		if (vehicleClass.isAssignableFrom(vehicle.getClass())) {
+		if (isManagedVehicle(vehicle)) {
 			final VehicleData data = getVehicleData(vehicle);
 			data.updateLastTimeUsed();
 			if (returnToOwner)
@@ -48,7 +44,7 @@ public class VehicleZapper extends VehicleListener implements Runnable {
 	@Override
 	public void onVehicleExit(VehicleExitEvent event) {
 		final Vehicle vehicle = event.getVehicle();
-		if (vehicleClass.isAssignableFrom(vehicle.getClass()))
+		if (isManagedVehicle(vehicle))
 			getVehicleData(vehicle).updateLastTimeUsed();
 	}
 
@@ -81,7 +77,7 @@ public class VehicleZapper extends VehicleListener implements Runnable {
 	@Override
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
 		final Vehicle vehicle = event.getVehicle();
-		if (vehicleClass.isAssignableFrom(vehicle.getClass()))
+		if (isManagedVehicle(vehicle))
 			vehicles.remove(vehicle);
 	}
 
@@ -107,17 +103,6 @@ public class VehicleZapper extends VehicleListener implements Runnable {
 		}
 	}
 
-	private Material getVehicleMaterial(Vehicle vehicle) {
-		if (vehicle instanceof Boat) {
-			return Material.BOAT;
-		} else if (vehicle instanceof Minecart) {
-			if (vehicle instanceof StorageMinecart)
-				return Material.STORAGE_MINECART;
-			else if (vehicle instanceof PoweredMinecart)
-				return Material.POWERED_MINECART;
-			else
-				return Material.MINECART;
-		} else
-			return Material.AIR;
-	}
+	protected abstract Material getVehicleMaterial(Vehicle vehicle);
+
 }
