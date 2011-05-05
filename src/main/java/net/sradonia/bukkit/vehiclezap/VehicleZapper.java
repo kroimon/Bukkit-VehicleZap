@@ -30,15 +30,18 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 
 	protected abstract boolean isManagedVehicle(Vehicle vehicle);
 
-	@Override
-	public void onVehicleCreate(VehicleCreateEvent event) {
-		final Vehicle vehicle = event.getVehicle();
+	public void addVehicle(final Vehicle vehicle) {
 		if (isManagedVehicle(vehicle)) {
 			final VehicleData data = getVehicleData(vehicle);
 			data.updateLastTimeUsed();
 			if (returnToOwner)
 				data.setOwner(findOwner(vehicle));
 		}
+	}
+
+	@Override
+	public void onVehicleCreate(VehicleCreateEvent event) {
+		addVehicle(event.getVehicle());
 	}
 
 	@Override

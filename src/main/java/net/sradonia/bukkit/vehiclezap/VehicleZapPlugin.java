@@ -3,8 +3,13 @@ package net.sradonia.bukkit.vehiclezap;
 import java.io.File;
 import java.util.logging.Logger;
 
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
+import org.bukkit.event.world.WorldListener;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,6 +18,9 @@ import org.bukkit.util.config.Configuration;
 
 public class VehicleZapPlugin extends JavaPlugin {
 	private static final Logger log = Logger.getLogger("Minecraft");
+
+	private VehicleZapper boatZapper;
+	private VehicleZapper minecartZapper;
 
 	public void onEnable() {
 		// Load configuration
@@ -36,29 +44,50 @@ public class VehicleZapPlugin extends JavaPlugin {
 		final int checkInterval = config.getInt("checkInterval", 30) * 20;
 
 		if (config.getBoolean("boats.enable", true)) {
-			final VehicleZapper zapper = new BoatZapper(
+			boatZapper = new BoatZapper(
 					config.getInt("boats.maxLifetime", 120),
 					config.getBoolean("boats.strikeLightning", true),
 					config.getBoolean("boats.returnToOwner", false));
-			pluginManager.registerEvent(Type.VEHICLE_CREATE, zapper, Priority.Monitor, this);
-			pluginManager.registerEvent(Type.VEHICLE_EXIT, zapper, Priority.Monitor, this);
-			pluginManager.registerEvent(Type.VEHICLE_DESTROY, zapper, Priority.Monitor, this);
-			scheduler.scheduleSyncRepeatingTask(this, zapper, checkInterval, checkInterval);
+			pluginManager.registerEvent(Type.VEHICLE_CREATE, boatZapper, Priority.Monitor, this);
+			pluginManager.registerEvent(Type.VEHICLE_EXIT, boatZapper, Priority.Monitor, this);
+			pluginManager.registerEvent(Type.VEHICLE_DESTROY, boatZapper, Priority.Monitor, this);
+			scheduler.scheduleSyncRepeatingTask(this, boatZapper, checkInterval, checkInterval);
 		}
 
 		if (config.getBoolean("minecarts.enable", false)) {
-			final VehicleZapper zapper = new MinecartZapper(
+			minecartZapper = new MinecartZapper(
 					config.getInt("minecarts.maxLifetime", 120),
 					config.getBoolean("minecarts.strikeLightning", true),
 					config.getBoolean("minecarts.returnToOwner", false));
-			pluginManager.registerEvent(Type.VEHICLE_CREATE, zapper, Priority.Monitor, this);
-			pluginManager.registerEvent(Type.VEHICLE_EXIT, zapper, Priority.Monitor, this);
-			pluginManager.registerEvent(Type.VEHICLE_DESTROY, zapper, Priority.Monitor, this);
-			scheduler.scheduleSyncRepeatingTask(this, zapper, checkInterval, checkInterval);
+			pluginManager.registerEvent(Type.VEHICLE_CREATE, minecartZapper, Priority.Monitor, this);
+			pluginManager.registerEvent(Type.VEHICLE_EXIT, minecartZapper, Priority.Monitor, this);
+			pluginManager.registerEvent(Type.VEHICLE_DESTROY, minecartZapper, Priority.Monitor, this);
+			scheduler.scheduleSyncRepeatingTask(this, minecartZapper, checkInterval, checkInterval);
 		}
+
+		// Load and manage existing vehicles
+		for (World world : getServer().getWorlds())
+			loadWorldVehicles(world);
+		pluginManager.registerEvent(Type.WORLD_LOAD, new WorldListener() {
+			@Override
+			public void onWorldLoad(WorldLoadEvent event) {
+				loadWorldVehicles(event.getWorld());
+			}
+		}, Priority.Monitor, this);
 
 		final PluginDescriptionFile pdf = getDescription();
 		log.info(pdf.getFullName() + " enabled.");
+	}
+
+	private void loadWorldVehicles(World world) {
+		if (boatZapper != null || minecartZapper != null)
+			for (Entity entity : world.getEntities())
+				if (entity instanceof Vehicle) {
+					if (boatZapper != null)
+						boatZapper.addVehicle((Vehicle) entity);
+					if (minecartZapper != null)
+						minecartZapper.addVehicle((Vehicle) entity);
+				}
 	}
 
 	public void onDisable() {
