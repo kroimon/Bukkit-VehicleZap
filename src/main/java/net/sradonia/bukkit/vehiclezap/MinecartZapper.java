@@ -13,12 +13,12 @@ public class MinecartZapper extends VehicleZapper {
 	}
 
 	@Override
-	protected boolean isManagedVehicle(Vehicle vehicle) {
+	protected boolean isManagedVehicle(final Vehicle vehicle) {
 		return (vehicle instanceof Minecart) && !(vehicle instanceof StorageMinecart || vehicle instanceof PoweredMinecart);
 	}
 
 	@Override
-	protected Material getVehicleMaterial(Vehicle vehicle) {
+	protected Material getVehicleMaterial(final Vehicle vehicle) {
 		return Material.MINECART;
 	}
 

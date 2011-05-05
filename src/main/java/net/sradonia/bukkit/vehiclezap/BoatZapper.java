@@ -11,12 +11,12 @@ public class BoatZapper extends VehicleZapper {
 	}
 
 	@Override
-	protected boolean isManagedVehicle(Vehicle vehicle) {
+	protected boolean isManagedVehicle(final Vehicle vehicle) {
 		return (vehicle instanceof Boat);
 	}
 
 	@Override
-	protected Material getVehicleMaterial(Vehicle vehicle) {
+	protected Material getVehicleMaterial(final Vehicle vehicle) {
 		return Material.BOAT;
 	}
 

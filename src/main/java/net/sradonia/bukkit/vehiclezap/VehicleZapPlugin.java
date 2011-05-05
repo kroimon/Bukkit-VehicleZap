@@ -10,7 +10,6 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
 import org.bukkit.event.world.WorldListener;
 import org.bukkit.event.world.WorldLoadEvent;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -75,11 +74,15 @@ public class VehicleZapPlugin extends JavaPlugin {
 			}
 		}, Priority.Monitor, this);
 
-		final PluginDescriptionFile pdf = getDescription();
-		log.info(pdf.getFullName() + " enabled.");
+		// Log success
+		log.info(getDescription().getFullName() + " enabled.");
 	}
 
-	private void loadWorldVehicles(World world) {
+	/**
+	 * Loads all vehicles from the given world and adds them to the specific zappers.
+	 * @param world the world to load vehicles from
+	 */
+	private void loadWorldVehicles(final World world) {
 		if (boatZapper != null || minecartZapper != null)
 			for (Entity entity : world.getEntities())
 				if (entity instanceof Vehicle) {
@@ -91,7 +94,6 @@ public class VehicleZapPlugin extends JavaPlugin {
 	}
 
 	public void onDisable() {
-		final PluginDescriptionFile pdf = getDescription();
-		log.info(pdf.getFullName() + " disabled.");
+		log.info(getDescription().getFullName() + " disabled.");
 	}
 }

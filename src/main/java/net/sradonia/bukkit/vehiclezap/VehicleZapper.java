@@ -16,11 +16,11 @@ import org.bukkit.util.Vector;
 
 public abstract class VehicleZapper extends VehicleListener implements Runnable {
 
-	private WeakHashMap<Vehicle, VehicleData> vehicles = new WeakHashMap<Vehicle, VehicleData>();
+	private final WeakHashMap<Vehicle, VehicleData> vehicles = new WeakHashMap<Vehicle, VehicleData>();
 
-	private int maxLifetime;
-	private boolean strikeLightning;
-	private boolean returnToOwner;
+	private final int maxLifetime;
+	private final boolean strikeLightning;
+	private final boolean returnToOwner;
 
 	public VehicleZapper(int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
 		this.maxLifetime = maxLifetime;
@@ -28,8 +28,30 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 		this.returnToOwner = returnToOwner;
 	}
 
-	protected abstract boolean isManagedVehicle(Vehicle vehicle);
+	/**
+	 * Whether this type of vehicle is managed by this zapper instance.
+	 * 
+	 * @param vehicle
+	 *        the vehicle to check
+	 * @return
+	 */
+	protected abstract boolean isManagedVehicle(final Vehicle vehicle);
 
+	/**
+	 * Returns the {@link Material} to give to the owner on vehicle destroyal.
+	 * 
+	 * @param vehicle
+	 *        the vehicle that gets destroyed.
+	 * @return the Material to add to the owner's inventory.
+	 */
+	protected abstract Material getVehicleMaterial(final Vehicle vehicle);
+
+	/**
+	 * Add a vehicle to be managed by this zapper given it is of the correct type. The time of last usage is set to the current timestamp.
+	 * 
+	 * @param vehicle
+	 *        the vehicle to add
+	 */
 	public void addVehicle(final Vehicle vehicle) {
 		if (isManagedVehicle(vehicle)) {
 			final VehicleData data = getVehicleData(vehicle);
@@ -39,11 +61,21 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.bukkit.event.vehicle.VehicleListener#onVehicleCreate(org.bukkit.event.vehicle.VehicleCreateEvent)
+	 */
 	@Override
 	public void onVehicleCreate(VehicleCreateEvent event) {
 		addVehicle(event.getVehicle());
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.bukkit.event.vehicle.VehicleListener#onVehicleExit(org.bukkit.event.vehicle.VehicleExitEvent)
+	 */
 	@Override
 	public void onVehicleExit(VehicleExitEvent event) {
 		final Vehicle vehicle = event.getVehicle();
@@ -51,7 +83,14 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 			getVehicleData(vehicle).updateLastTimeUsed();
 	}
 
-	private VehicleData getVehicleData(Vehicle vehicle) {
+	/**
+	 * Returns a data container to store vehicle specific data.
+	 * 
+	 * @param vehicle
+	 *        the vehicle to store data for
+	 * @return the data container for the given vehicle
+	 */
+	private VehicleData getVehicleData(final Vehicle vehicle) {
 		VehicleData data = vehicles.get(vehicle);
 		if (data == null) {
 			data = new VehicleData();
@@ -63,7 +102,7 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 	/**
 	 * Tries to find the owner of the given vehicle.
 	 */
-	private Player findOwner(Vehicle vehicle) {
+	private Player findOwner(final Vehicle vehicle) {
 		final Vector vehicleVector = vehicle.getLocation().toVector();
 		double minDistance = Double.MAX_VALUE;
 		Player owner = null;
@@ -77,6 +116,11 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 		return owner;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.bukkit.event.vehicle.VehicleListener#onVehicleDestroy(org.bukkit.event.vehicle.VehicleDestroyEvent)
+	 */
 	@Override
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
 		final Vehicle vehicle = event.getVehicle();
@@ -84,6 +128,9 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 			vehicles.remove(vehicle);
 	}
 
+	/**
+	 * This method is called by the Bukkit scheduler to check for abandoned vehicles at regular intervals.
+	 */
 	public void run() {
 		final Iterator<Entry<Vehicle, VehicleData>> it = vehicles.entrySet().iterator();
 		while (it.hasNext()) {
@@ -105,7 +152,4 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 			}
 		}
 	}
-
-	protected abstract Material getVehicleMaterial(Vehicle vehicle);
-
 }
