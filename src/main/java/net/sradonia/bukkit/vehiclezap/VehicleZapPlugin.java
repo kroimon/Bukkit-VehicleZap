@@ -1,6 +1,7 @@
 package net.sradonia.bukkit.vehiclezap;
 
 import java.io.File;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.World;
@@ -44,6 +45,7 @@ public class VehicleZapPlugin extends JavaPlugin {
 
 		if (config.getBoolean("boats.enable", true)) {
 			boatZapper = new BoatZapper(
+					config.getStringList("boats.worlds", null),
 					config.getInt("boats.maxLifetime", 120),
 					config.getBoolean("boats.strikeLightning", true),
 					config.getBoolean("boats.returnToOwner", false));
@@ -55,6 +57,7 @@ public class VehicleZapPlugin extends JavaPlugin {
 
 		if (config.getBoolean("minecarts.enable", false)) {
 			minecartZapper = new MinecartZapper(
+					config.getStringList("boats.worlds", null),
 					config.getInt("minecarts.maxLifetime", 120),
 					config.getBoolean("minecarts.strikeLightning", true),
 					config.getBoolean("minecarts.returnToOwner", false));
@@ -83,14 +86,15 @@ public class VehicleZapPlugin extends JavaPlugin {
 	 * @param world the world to load vehicles from
 	 */
 	private void loadWorldVehicles(final World world) {
-		if (boatZapper != null || minecartZapper != null)
-			for (Entity entity : world.getEntities())
-				if (entity instanceof Vehicle) {
-					if (boatZapper != null)
-						boatZapper.addVehicle((Vehicle) entity);
-					if (minecartZapper != null)
-						minecartZapper.addVehicle((Vehicle) entity);
-				}
+		final List<Entity> entities = world.getEntities();
+		if (boatZapper != null && boatZapper.isEnabledForWorld(world))
+			for (Entity entity : entities)
+				if (entity instanceof Vehicle)
+					boatZapper.addVehicle((Vehicle) entity);
+		if (minecartZapper != null && minecartZapper.isEnabledForWorld(world))
+			for (Entity entity : entities)
+				if (entity instanceof Vehicle)
+					minecartZapper.addVehicle((Vehicle) entity);
 	}
 
 	public void onDisable() {

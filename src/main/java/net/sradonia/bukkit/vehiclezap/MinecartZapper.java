@@ -1,5 +1,7 @@
 package net.sradonia.bukkit.vehiclezap;
 
+import java.util.List;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.PoweredMinecart;
@@ -8,8 +10,8 @@ import org.bukkit.entity.Vehicle;
 
 public class MinecartZapper extends VehicleZapper {
 
-	public MinecartZapper(int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
-		super( maxLifetime, strikeLightning, returnToOwner);
+	public MinecartZapper(List<String> worlds, int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
+		super(worlds, maxLifetime, strikeLightning, returnToOwner);
 	}
 
 	@Override

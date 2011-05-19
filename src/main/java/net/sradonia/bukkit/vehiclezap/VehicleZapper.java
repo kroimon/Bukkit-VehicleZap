@@ -1,10 +1,12 @@
 package net.sradonia.bukkit.vehiclezap;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
@@ -18,11 +20,13 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 
 	private final WeakHashMap<Vehicle, VehicleData> vehicles = new WeakHashMap<Vehicle, VehicleData>();
 
+	private final List<String> worlds;
 	private final int maxLifetime;
 	private final boolean strikeLightning;
 	private final boolean returnToOwner;
 
-	public VehicleZapper(int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
+	public VehicleZapper(List<String> worlds, int maxLifetime, boolean strikeLightning, boolean returnToOwner) {
+		this.worlds = worlds;
 		this.maxLifetime = maxLifetime;
 		this.strikeLightning = strikeLightning;
 		this.returnToOwner = returnToOwner;
@@ -47,13 +51,24 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 	protected abstract Material getVehicleMaterial(final Vehicle vehicle);
 
 	/**
+	 * Checks if this zapper is enabled for the given world.
+	 * 
+	 * @param world
+	 *        the world to check for
+	 * @return whether this zapper is enabled for the given world
+	 */
+	public boolean isEnabledForWorld(World world) {
+		return worlds.isEmpty() || worlds.contains(world.getName());
+	}
+
+	/**
 	 * Add a vehicle to be managed by this zapper given it is of the correct type. The time of last usage is set to the current timestamp.
 	 * 
 	 * @param vehicle
 	 *        the vehicle to add
 	 */
 	public void addVehicle(final Vehicle vehicle) {
-		if (isManagedVehicle(vehicle)) {
+		if (isManagedVehicle(vehicle) && isEnabledForWorld(vehicle.getWorld())) {
 			final VehicleData data = getVehicleData(vehicle);
 			data.updateLastTimeUsed();
 			if (returnToOwner)
@@ -79,7 +94,7 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 	@Override
 	public void onVehicleExit(VehicleExitEvent event) {
 		final Vehicle vehicle = event.getVehicle();
-		if (isManagedVehicle(vehicle))
+		if (isManagedVehicle(vehicle) && isEnabledForWorld(vehicle.getWorld()))
 			getVehicleData(vehicle).updateLastTimeUsed();
 	}
 
@@ -124,7 +139,7 @@ public abstract class VehicleZapper extends VehicleListener implements Runnable 
 	@Override
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
 		final Vehicle vehicle = event.getVehicle();
-		if (isManagedVehicle(vehicle))
+		if (isManagedVehicle(vehicle) && isEnabledForWorld(vehicle.getWorld()))
 			vehicles.remove(vehicle);
 	}
 
